@@ -23,6 +23,19 @@ def init_db():
             )
         ''')
         conn.commit()
+        conn.execute('''
+            CREATE TABLE blood_pressure (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            blood_pressure TEXT NOT NULL,
+            date TEXT NOT NULL,
+            FOREIGN KEY (user_id) REFERENCES users(id)
+            )
+        ''')
+        conn.commit()
+
+        
+
 
 if __name__ == '__main__':
     init_db()

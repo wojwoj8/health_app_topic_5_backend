@@ -84,10 +84,65 @@ def login():
     else:
         return jsonify({'error': 'Invalid email or password.'}), 401
 
-# Blood oxygen level submission endpoint (protected)
+# Get all blood oxygen records for a user
+@app.route('/blood-oxygen', methods=['GET'])
+@token_required
+def get_blood_oxygen_records(current_user_id):
+    try:
+        with get_db_connection() as conn:
+            records = conn.execute(
+                'SELECT * FROM blood_oxygen_levels WHERE user_id = ?',
+                (current_user_id,)
+            ).fetchall()
+        return jsonify([dict(record) for record in records]), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# Update a blood oxygen record
+@app.route('/blood-oxygen/<int:record_id>', methods=['PUT'])
+@token_required
+def update_blood_oxygen_record(current_user_id, record_id):
+    data = request.json
+    blood_oxygen_level = data.get('blood_oxygen_level')
+    date = data.get('date')
+
+    if not blood_oxygen_level or not date:
+        return jsonify({'error': 'Blood oxygen level and date are required.'}), 400
+
+    try:
+        with get_db_connection() as conn:
+            result = conn.execute(
+                'UPDATE blood_oxygen_levels SET blood_oxygen_level = ?, date = ? WHERE id = ? AND user_id = ?',
+                (blood_oxygen_level, date, record_id, current_user_id)
+            )
+            conn.commit()
+        if result.rowcount == 0:
+            return jsonify({'error': 'Record not found or not authorized to update.'}), 404
+        return jsonify({'message': 'Record updated successfully.'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# Delete a blood oxygen record
+@app.route('/blood-oxygen/<int:record_id>', methods=['DELETE'])
+@token_required
+def delete_blood_oxygen_record(current_user_id, record_id):
+    try:
+        with get_db_connection() as conn:
+            result = conn.execute(
+                'DELETE FROM blood_oxygen_levels WHERE id = ? AND user_id = ?',
+                (record_id, current_user_id)
+            )
+            conn.commit()
+        if result.rowcount == 0:
+            return jsonify({'error': 'Record not found or not authorized to delete.'}), 404
+        return jsonify({'message': 'Record deleted successfully.'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# Add a new blood oxygen record
 @app.route('/blood-oxygen', methods=['POST'])
 @token_required
-def blood_oxygen(current_user_id):
+def add_blood_oxygen_record(current_user_id):
     data = request.json
     blood_oxygen_level = data.get('blood_oxygen_level')
     date = data.get('date')
@@ -105,6 +160,85 @@ def blood_oxygen(current_user_id):
         return jsonify({'message': 'Blood oxygen level recorded successfully.'}), 201
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+
+# Get all blood pressure records for a user
+@app.route('/blood-pressure', methods=['GET'])
+@token_required
+def get_blood_pressure_records(current_user_id):
+    try:
+        with get_db_connection() as conn:
+            records = conn.execute(
+                'SELECT * FROM blood_pressure WHERE user_id = ?',
+                (current_user_id,)
+            ).fetchall()
+        return jsonify([dict(record) for record in records]), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# Add a new blood pressure record
+@app.route('/blood-pressure', methods=['POST'])
+@token_required
+def add_blood_pressure_record(current_user_id):
+    data = request.json
+    blood_pressure = data.get('blood_pressure')
+    date = data.get('date')
+
+    if not blood_pressure or not date:
+        return jsonify({'error': 'Blood pressure and date are required.'}), 400
+
+    try:
+        with get_db_connection() as conn:
+            conn.execute(
+                'INSERT INTO blood_pressure (user_id, blood_pressure, date) VALUES (?, ?, ?)',
+                (current_user_id, blood_pressure, date)
+            )
+            conn.commit()
+        return jsonify({'message': 'Blood pressure recorded successfully.'}), 201
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# Update a blood pressure record
+@app.route('/blood-pressure/<int:record_id>', methods=['PUT'])
+@token_required
+def update_blood_pressure_record(current_user_id, record_id):
+    data = request.json
+    blood_pressure = data.get('blood_pressure')
+    date = data.get('date')
+
+    if not blood_pressure or not date:
+        return jsonify({'error': 'Blood pressure and date are required.'}), 400
+
+    try:
+        with get_db_connection() as conn:
+            result = conn.execute(
+                'UPDATE blood_pressure SET blood_pressure = ?, date = ? WHERE id = ? AND user_id = ?',
+                (blood_pressure, date, record_id, current_user_id)
+            )
+            conn.commit()
+        if result.rowcount == 0:
+            return jsonify({'error': 'Record not found or not authorized to update.'}), 404
+        return jsonify({'message': 'Record updated successfully.'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# Delete a blood pressure record
+@app.route('/blood-pressure/<int:record_id>', methods=['DELETE'])
+@token_required
+def delete_blood_pressure_record(current_user_id, record_id):
+    try:
+        with get_db_connection() as conn:
+            result = conn.execute(
+                'DELETE FROM blood_pressure WHERE id = ? AND user_id = ?',
+                (record_id, current_user_id)
+            )
+            conn.commit()
+        if result.rowcount == 0:
+            return jsonify({'error': 'Record not found or not authorized to delete.'}), 404
+        return jsonify({'message': 'Record deleted successfully.'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 
 if __name__ == '__main__':
     app.run(debug=True, ssl_context=('cert.pem', 'key.pem'))
