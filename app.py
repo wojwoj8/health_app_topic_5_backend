@@ -240,5 +240,160 @@ def delete_blood_pressure_record(current_user_id, record_id):
         return jsonify({'error': str(e)}), 500
 
 
+# Get all blood sugar records for a user
+@app.route('/blood-sugar', methods=['GET'])
+@token_required
+def get_blood_sugar_records(current_user_id):
+    try:
+        with get_db_connection() as conn:
+            records = conn.execute(
+                'SELECT * FROM blood_sugar WHERE user_id = ?',
+                (current_user_id,)
+            ).fetchall()
+        return jsonify([dict(record) for record in records]), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# Add a new blood sugar record
+@app.route('/blood-sugar', methods=['POST'])
+@token_required
+def add_blood_sugar_record(current_user_id):
+    data = request.json
+    blood_sugar = data.get('blood_sugar')
+    date = data.get('date')
+
+    if not blood_sugar or not date:
+        return jsonify({'error': 'Blood sugar and date are required.'}), 400
+
+    try:
+        with get_db_connection() as conn:
+            conn.execute(
+                'INSERT INTO blood_sugar (user_id, blood_sugar, date) VALUES (?, ?, ?)',
+                (current_user_id, blood_sugar, date)
+            )
+            conn.commit()
+        return jsonify({'message': 'Blood sugar recorded successfully.'}), 201
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# Update a blood sugar record
+@app.route('/blood-sugar/<int:record_id>', methods=['PUT'])
+@token_required
+def update_blood_sugar_record(current_user_id, record_id):
+    data = request.json
+    blood_sugar = data.get('blood_sugar')
+    date = data.get('date')
+
+    if not blood_sugar or not date:
+        return jsonify({'error': 'Blood sugar and date are required.'}), 400
+
+    try:
+        with get_db_connection() as conn:
+            result = conn.execute(
+                'UPDATE blood_sugar SET blood_sugar = ?, date = ? WHERE id = ? AND user_id = ?',
+                (blood_sugar, date, record_id, current_user_id)
+            )
+            conn.commit()
+        if result.rowcount == 0:
+            return jsonify({'error': 'Record not found or not authorized to update.'}), 404
+        return jsonify({'message': 'Record updated successfully.'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# Delete a blood sugar record
+@app.route('/blood-sugar/<int:record_id>', methods=['DELETE'])
+@token_required
+def delete_blood_sugar_record(current_user_id, record_id):
+    try:
+        with get_db_connection() as conn:
+            result = conn.execute(
+                'DELETE FROM blood_sugar WHERE id = ? AND user_id = ?',
+                (record_id, current_user_id)
+            )
+            conn.commit()
+        if result.rowcount == 0:
+            return jsonify({'error': 'Record not found or not authorized to delete.'}), 404
+        return jsonify({'message': 'Record deleted successfully.'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# Get all weight records for a user
+@app.route('/weight', methods=['GET'])
+@token_required
+def get_weight_records(current_user_id):
+    try:
+        with get_db_connection() as conn:
+            records = conn.execute(
+                'SELECT * FROM weight WHERE user_id = ?',
+                (current_user_id,)
+            ).fetchall()
+        return jsonify([dict(record) for record in records]), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# Add a new weight record
+@app.route('/weight', methods=['POST'])
+@token_required
+def add_weight_record(current_user_id):
+    data = request.json
+    weight = data.get('weight')
+    date = data.get('date')
+
+    if not weight or not date:
+        return jsonify({'error': 'Weight and date are required.'}), 400
+
+    try:
+        with get_db_connection() as conn:
+            conn.execute(
+                'INSERT INTO weight (user_id, weight, date) VALUES (?, ?, ?)',
+                (current_user_id, weight, date)
+            )
+            conn.commit()
+        return jsonify({'message': 'Weight recorded successfully.'}), 201
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# Update a weight record
+@app.route('/weight/<int:record_id>', methods=['PUT'])
+@token_required
+def update_weight_record(current_user_id, record_id):
+    data = request.json
+    weight = data.get('weight')
+    date = data.get('date')
+
+    if not weight or not date:
+        return jsonify({'error': 'Weight and date are required.'}), 400
+
+    try:
+        with get_db_connection() as conn:
+            result = conn.execute(
+                'UPDATE weight SET weight = ?, date = ? WHERE id = ? AND user_id = ?',
+                (weight, date, record_id, current_user_id)
+            )
+            conn.commit()
+        if result.rowcount == 0:
+            return jsonify({'error': 'Record not found or not authorized to update.'}), 404
+        return jsonify({'message': 'Record updated successfully.'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# Delete a weight record
+@app.route('/weight/<int:record_id>', methods=['DELETE'])
+@token_required
+def delete_weight_record(current_user_id, record_id):
+    try:
+        with get_db_connection() as conn:
+            result = conn.execute(
+                'DELETE FROM weight WHERE id = ? AND user_id = ?',
+                (record_id, current_user_id)
+            )
+            conn.commit()
+        if result.rowcount == 0:
+            return jsonify({'error': 'Record not found or not authorized to delete.'}), 404
+        return jsonify({'message': 'Record deleted successfully.'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
 if __name__ == '__main__':
     app.run(debug=True, ssl_context=('cert.pem', 'key.pem'))
