@@ -13,6 +13,16 @@ def init_db():
             )
         ''')
         conn.commit()
+        conn.execute('''
+            CREATE TABLE IF NOT EXISTS blood_oxygen_levels (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                blood_oxygen_level REAL NOT NULL,
+                date TEXT NOT NULL,
+                FOREIGN KEY (user_id) REFERENCES users(id)
+            )
+        ''')
+        conn.commit()
 
 if __name__ == '__main__':
     init_db()
