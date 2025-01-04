@@ -4,10 +4,13 @@ import sqlite3
 import base64
 import json
 from functools import wraps
+from flask_cors import CORS, cross_origin
 
 app = Flask(__name__)
 bcrypt = Bcrypt(app)
 DATABASE = 'users.db'
+CORS(app, resources={r"/*": {"origins": "*"}})
+
 
 # Utility function to connect to the database
 def get_db_connection():
@@ -15,11 +18,13 @@ def get_db_connection():
     conn.row_factory = sqlite3.Row
     return conn
 
+
 # Simple encode/decode JWT for school project
 def encode_jwt(payload):
     header = json.dumps({"alg": "none", "typ": "JWT"}).encode()
     payload = json.dumps(payload).encode()
     return f"{base64.urlsafe_b64encode(header).decode().strip('=')}.{base64.urlsafe_b64encode(payload).decode().strip('=')}"
+
 
 def decode_jwt(token):
     try:
@@ -28,6 +33,7 @@ def decode_jwt(token):
         return json.loads(decoded_payload)
     except Exception:
         return None
+
 
 # Token required decorator
 def token_required(f):
@@ -42,12 +48,15 @@ def token_required(f):
         except Exception:
             return jsonify({'error': 'Invalid token.'}), 401
         return f(current_user_id, *args, **kwargs)
+
     return decorated
+
 
 # Register endpoint
 @app.route('/register', methods=['POST'])
 def register():
     data = request.json
+    print(data)
     email = data.get('email')
     password = data.get('password')
 
@@ -65,10 +74,12 @@ def register():
     except sqlite3.IntegrityError:
         return jsonify({'error': 'Email already registered.'}), 409
 
+
 # Login endpoint
 @app.route('/login', methods=['POST'])
 def login():
     data = request.json
+    print(data)
     email = data.get('email')
     password = data.get('password')
 
@@ -84,6 +95,7 @@ def login():
     else:
         return jsonify({'error': 'Invalid email or password.'}), 401
 
+
 # Get all blood oxygen records for a user
 @app.route('/blood-oxygen', methods=['GET'])
 @token_required
@@ -97,6 +109,7 @@ def get_blood_oxygen_records(current_user_id):
         return jsonify([dict(record) for record in records]), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
 
 # Update a blood oxygen record
 @app.route('/blood-oxygen/<int:record_id>', methods=['PUT'])
@@ -122,6 +135,7 @@ def update_blood_oxygen_record(current_user_id, record_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+
 # Delete a blood oxygen record
 @app.route('/blood-oxygen/<int:record_id>', methods=['DELETE'])
 @token_required
@@ -139,12 +153,13 @@ def delete_blood_oxygen_record(current_user_id, record_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+
 # Add a new blood oxygen record
 @app.route('/blood-oxygen', methods=['POST'])
 @token_required
 def add_blood_oxygen_record(current_user_id):
     data = request.json
-    blood_oxygen_level = data.get('blood_oxygen_level')
+    blood_oxygen_level = data.get('value')
     date = data.get('date')
 
     if not blood_oxygen_level or not date:
@@ -152,12 +167,13 @@ def add_blood_oxygen_record(current_user_id):
 
     try:
         with get_db_connection() as conn:
-            conn.execute(
+            cursor = conn.execute(
                 'INSERT INTO blood_oxygen_levels (user_id, blood_oxygen_level, date) VALUES (?, ?, ?)',
                 (current_user_id, blood_oxygen_level, date)
             )
+            new_item_id = cursor.lastrowid
             conn.commit()
-        return jsonify({'message': 'Blood oxygen level recorded successfully.'}), 201
+        return jsonify({'message': 'Blood oxygen level recorded successfully.', 'id': new_item_id}), 201
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -176,27 +192,32 @@ def get_blood_pressure_records(current_user_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+
 # Add a new blood pressure record
 @app.route('/blood-pressure', methods=['POST'])
 @token_required
 def add_blood_pressure_record(current_user_id):
     data = request.json
-    blood_pressure = data.get('blood_pressure')
+
+    blood_pressure = data.get('value')
     date = data.get('date')
 
     if not blood_pressure or not date:
+        print('Blood pressure and date are required')
         return jsonify({'error': 'Blood pressure and date are required.'}), 400
 
     try:
         with get_db_connection() as conn:
-            conn.execute(
+            cursor = conn.execute(
                 'INSERT INTO blood_pressure (user_id, blood_pressure, date) VALUES (?, ?, ?)',
                 (current_user_id, blood_pressure, date)
             )
+            new_item_id = cursor.lastrowid
             conn.commit()
-        return jsonify({'message': 'Blood pressure recorded successfully.'}), 201
+        return jsonify({'message': 'Blood pressure recorded successfully.', 'id': new_item_id}), 201
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
 
 # Update a blood pressure record
 @app.route('/blood-pressure/<int:record_id>', methods=['PUT'])
@@ -221,6 +242,7 @@ def update_blood_pressure_record(current_user_id, record_id):
         return jsonify({'message': 'Record updated successfully.'}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
 
 # Delete a blood pressure record
 @app.route('/blood-pressure/<int:record_id>', methods=['DELETE'])
@@ -254,12 +276,13 @@ def get_blood_sugar_records(current_user_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+
 # Add a new blood sugar record
 @app.route('/blood-sugar', methods=['POST'])
 @token_required
 def add_blood_sugar_record(current_user_id):
     data = request.json
-    blood_sugar = data.get('blood_sugar')
+    blood_sugar = data.get('value')
     date = data.get('date')
 
     if not blood_sugar or not date:
@@ -267,14 +290,16 @@ def add_blood_sugar_record(current_user_id):
 
     try:
         with get_db_connection() as conn:
-            conn.execute(
+            cursor = conn.execute(
                 'INSERT INTO blood_sugar (user_id, blood_sugar, date) VALUES (?, ?, ?)',
                 (current_user_id, blood_sugar, date)
             )
+            new_item_id = cursor.lastrowid
             conn.commit()
-        return jsonify({'message': 'Blood sugar recorded successfully.'}), 201
+        return jsonify({'message': 'Blood sugar recorded successfully.', 'id': new_item_id}), 201
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
 
 # Update a blood sugar record
 @app.route('/blood-sugar/<int:record_id>', methods=['PUT'])
@@ -300,6 +325,7 @@ def update_blood_sugar_record(current_user_id, record_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+
 # Delete a blood sugar record
 @app.route('/blood-sugar/<int:record_id>', methods=['DELETE'])
 @token_required
@@ -317,10 +343,12 @@ def delete_blood_sugar_record(current_user_id, record_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+
 # Get all weight records for a user
 @app.route('/weight', methods=['GET'])
 @token_required
 def get_weight_records(current_user_id):
+    print(current_user_id)
     try:
         with get_db_connection() as conn:
             records = conn.execute(
@@ -331,12 +359,13 @@ def get_weight_records(current_user_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+
 # Add a new weight record
 @app.route('/weight', methods=['POST'])
 @token_required
 def add_weight_record(current_user_id):
     data = request.json
-    weight = data.get('weight')
+    weight = data.get('value')
     date = data.get('date')
 
     if not weight or not date:
@@ -344,14 +373,16 @@ def add_weight_record(current_user_id):
 
     try:
         with get_db_connection() as conn:
-            conn.execute(
+            cursor = conn.execute(
                 'INSERT INTO weight (user_id, weight, date) VALUES (?, ?, ?)',
                 (current_user_id, weight, date)
             )
+            new_item_id = cursor.lastrowid
             conn.commit()
-        return jsonify({'message': 'Weight recorded successfully.'}), 201
+        return jsonify({'message': 'Weight recorded successfully.', 'id': new_item_id}), 201
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
 
 # Update a weight record
 @app.route('/weight/<int:record_id>', methods=['PUT'])
@@ -377,6 +408,7 @@ def update_weight_record(current_user_id, record_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+
 # Delete a weight record
 @app.route('/weight/<int:record_id>', methods=['DELETE'])
 @token_required
@@ -396,4 +428,6 @@ def delete_weight_record(current_user_id, record_id):
 
 
 if __name__ == '__main__':
-    app.run(debug=True, ssl_context=('cert.pem', 'key.pem'))
+    app.run(debug=True, host='0.0.0.0', port=5000)
+
+# ssl_context=('cert.pem', 'key.pem')
