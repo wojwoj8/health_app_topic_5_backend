@@ -19,7 +19,7 @@ def get_db_connection():
     return conn
 
 
-# Simple encode/decode JWT for school project
+# Simple encode/decode JWT
 def encode_jwt(payload):
     header = json.dumps({"alg": "none", "typ": "JWT"}).encode()
     payload = json.dumps(payload).encode()
