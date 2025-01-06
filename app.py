@@ -56,7 +56,6 @@ def token_required(f):
 @app.route('/register', methods=['POST'])
 def register():
     data = request.json
-    print(data)
     email = data.get('email')
     password = data.get('password')
 
@@ -79,7 +78,6 @@ def register():
 @app.route('/login', methods=['POST'])
 def login():
     data = request.json
-    print(data)
     email = data.get('email')
     password = data.get('password')
 
@@ -203,7 +201,6 @@ def add_blood_pressure_record(current_user_id):
     date = data.get('date')
 
     if not blood_pressure or not date:
-        print('Blood pressure and date are required')
         return jsonify({'error': 'Blood pressure and date are required.'}), 400
 
     try:
@@ -348,7 +345,6 @@ def delete_blood_sugar_record(current_user_id, record_id):
 @app.route('/weight', methods=['GET'])
 @token_required
 def get_weight_records(current_user_id):
-    print(current_user_id)
     try:
         with get_db_connection() as conn:
             records = conn.execute(
